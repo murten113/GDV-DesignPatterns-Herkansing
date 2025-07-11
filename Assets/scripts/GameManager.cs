@@ -9,11 +9,10 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Grid Configuration")]
     [SerializeField] private int gridWidth = 10;
     [SerializeField] private int gridHeight = 6;
-
-    [Header("Grid Settings")]
-    [SerializeField] private float cellSize = 80f;
+    [SerializeField] private float cellSize = 60f;
 
     [Header("UI References")]
     [SerializeField] private RectTransform itemPickerContentArea;
@@ -46,15 +45,15 @@ public class GameManager : MonoBehaviour
 
         _itemPickerUI = new ItemPickerUI(itemPickerContentArea, itemPickerButtonPrefab);
         _heldItemUI = new HeldItemUI(heldItemUIImage);
+
         _itemPickerUI.ItemPicked += OnItemPickedFromUI;
 
-        List<Item> items = new List<Item>
+        _itemPickerUI.Initialize(new List<Item>
         {
             new Item("item01", 1, 1, 5, ItemType.Basic),
             new Item("item02", 2, 2, 10, ItemType.Basic),
             new Item("item03", 3, 1, 15, ItemType.Basic)
-        };
-        _itemPickerUI.Initialize(items);
+        });
 
         CreateGridVisual();
         UpdateScore(0);
@@ -79,6 +78,7 @@ public class GameManager : MonoBehaviour
     private void OnItemPickedFromUI(Item item)
     {
         _currentItem = item;
+
         if (item.Sprite != null)
         {
             _heldItemUI.Show(item, item.Sprite);
@@ -103,45 +103,46 @@ public class GameManager : MonoBehaviour
     private void HandlePlacement()
     {
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                gridVisualContainer,
-                Input.mousePosition,
-                Camera.main,
-                out Vector2 localPoint))
+            gridVisualContainer,
+            Input.mousePosition,
+            null,
+            out Vector2 localPoint))
         {
             return;
         }
 
-        int gridX = Mathf.FloorToInt(localPoint.x / cellSize);
-        int gridY = Mathf.FloorToInt(-localPoint.y / cellSize);
+        Vector2 originOffset = new Vector2(
+            -gridVisualContainer.pivot.x * gridVisualContainer.rect.width,
+             gridVisualContainer.pivot.y * gridVisualContainer.rect.height
+        );
 
-        // Check bounds
-        if (gridX < 0 || gridY < 0 || gridX >= gridWidth || gridY >= gridHeight)
+        Vector2 relativePoint = localPoint - originOffset;
+
+        int gridX = Mathf.FloorToInt(relativePoint.x / cellSize);
+        int gridY = Mathf.FloorToInt(-relativePoint.y / cellSize);
+
+        Debug.Log($"Mouse: {Input.mousePosition}, Grid: ({gridX}, {gridY})");
+
+        if (!_gridSystem.IsInsideGrid(gridX, gridY) || !_gridSystem.CanPlaceItem(_currentItem, gridX, gridY))
         {
-            Debug.Log("Click was outside the grid bounds.");
+            Debug.Log("Cannot place item here or out of bounds.");
             return;
         }
 
-        if (_gridSystem.CanPlaceItem(_currentItem, gridX, gridY))
-        {
-            var placeCommand = new PlaceItemCommand(
-                _gridSystem,
-                _currentItem,
-                gridX,
-                gridY,
-                OnPlaceItemVisual,
-                OnRemoveItemVisual
-            );
+        var placeCommand = new PlaceItemCommand(
+            _gridSystem,
+            _currentItem,
+            gridX,
+            gridY,
+            OnPlaceItemVisual,
+            OnRemoveItemVisual
+        );
 
-            _commandInvoker.ExecuteCommand(placeCommand);
-
-            _currentItem = null;
-            _heldItemUI.Hide();
-        }
-        else
-        {
-            Debug.Log("Cannot place item here!");
-        }
+        _commandInvoker.ExecuteCommand(placeCommand);
+        _currentItem = null;
+        _heldItemUI.Hide();
     }
+
 
     private void OnPlaceItemVisual(Item item, int x, int y)
     {
@@ -150,8 +151,7 @@ public class GameManager : MonoBehaviour
         rt.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
         rt.sizeDelta = new Vector2(item.Width * cellSize, item.Height * cellSize);
 
-        Image img = itemGO.GetComponent<Image>();
-        if (img != null && item.Sprite != null)
+        if (item.Sprite != null && itemGO.TryGetComponent(out Image img))
         {
             img.sprite = item.Sprite;
         }
@@ -173,9 +173,6 @@ public class GameManager : MonoBehaviour
     private void UpdateScore(int delta)
     {
         _score += delta;
-        if (scoreText != null)
-        {
-            scoreText.text = $"Score: {_score}";
-        }
+        scoreText.text = $"Score: {_score}";
     }
 }
