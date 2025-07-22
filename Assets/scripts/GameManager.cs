@@ -31,6 +31,7 @@ public class GameManager : MonoBehaviour
     private HeldItemUI _heldItemUI;
 
     private Dictionary<(int x, int y), GameObject> _placedItemVisuals = new();
+    private Dictionary<(int x, int y), GameObject> _cellGameObjects = new();
     private int _score = 0;
 
     private void Awake()
@@ -71,6 +72,8 @@ public class GameManager : MonoBehaviour
                 RectTransform rt = cellGO.GetComponent<RectTransform>();
                 rt.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
                 rt.sizeDelta = new Vector2(cellSize, cellSize);
+
+                _cellGameObjects[(x, y)] = cellGO;
             }
         }
     }
@@ -103,33 +106,31 @@ public class GameManager : MonoBehaviour
     private void HandlePlacement()
     {
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            gridVisualContainer,
-            Input.mousePosition,
-            null,
-            out Vector2 localPoint))
-        {
+                gridVisualContainer,
+                Input.mousePosition,
+                null,
+                out Vector2 localPoint))
             return;
-        }
 
-        Vector2 originOffset = new Vector2(
-            -gridVisualContainer.pivot.x * gridVisualContainer.rect.width,
-             gridVisualContainer.pivot.y * gridVisualContainer.rect.height
-        );
+        Rect rect = gridVisualContainer.rect;
+        float px = localPoint.x - rect.xMin;
+        float py = localPoint.y - rect.yMin;
 
-        Vector2 relativePoint = localPoint - originOffset;
+        int gridX = Mathf.FloorToInt(px / cellSize);
+        int gridY = Mathf.FloorToInt(py / cellSize);
 
-        int gridX = Mathf.FloorToInt(relativePoint.x / cellSize);
-        int gridY = Mathf.FloorToInt(-relativePoint.y / cellSize);
+        gridY = (gridHeight - 1) - gridY;
 
-        Debug.Log($"Mouse: {Input.mousePosition}, Grid: ({gridX}, {gridY})");
+        Debug.Log($"Clicked grid cell: ({gridX}, {gridY})");
 
-        if (!_gridSystem.IsInsideGrid(gridX, gridY) || !_gridSystem.CanPlaceItem(_currentItem, gridX, gridY))
+        if (!_gridSystem.IsInsideGrid(gridX, gridY) ||
+            !_gridSystem.CanPlaceItem(_currentItem, gridX, gridY))
         {
             Debug.Log("Cannot place item here or out of bounds.");
             return;
         }
 
-        var placeCommand = new PlaceItemCommand(
+        var cmd = new PlaceItemCommand(
             _gridSystem,
             _currentItem,
             gridX,
@@ -137,8 +138,8 @@ public class GameManager : MonoBehaviour
             OnPlaceItemVisual,
             OnRemoveItemVisual
         );
+        _commandInvoker.ExecuteCommand(cmd);
 
-        _commandInvoker.ExecuteCommand(placeCommand);
         _currentItem = null;
         _heldItemUI.Hide();
     }
@@ -146,19 +147,25 @@ public class GameManager : MonoBehaviour
 
     private void OnPlaceItemVisual(Item item, int x, int y)
     {
-        GameObject itemGO = Instantiate(itemVisualPrefab, gridVisualContainer);
-        RectTransform rt = itemGO.GetComponent<RectTransform>();
-        rt.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
+        if (!_cellGameObjects.TryGetValue((x, y), out var cellGO))
+        {
+            Debug.LogError($"Cell ({x},{y}) not found!");
+            return;
+        }
+
+        var itemGO = Instantiate(itemVisualPrefab, cellGO.transform);
+        var rt = itemGO.GetComponent<RectTransform>();
+
+        rt.anchoredPosition = Vector2.zero;
         rt.sizeDelta = new Vector2(item.Width * cellSize, item.Height * cellSize);
 
-        if (item.Sprite != null && itemGO.TryGetComponent(out Image img))
-        {
+        if (item.Sprite != null && itemGO.TryGetComponent<Image>(out var img))
             img.sprite = item.Sprite;
-        }
 
         _placedItemVisuals[(x, y)] = itemGO;
         UpdateScore(item.ScoreValue);
     }
+
 
     private void OnRemoveItemVisual(Item item, int x, int y)
     {
