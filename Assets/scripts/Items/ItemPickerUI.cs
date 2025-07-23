@@ -1,56 +1,54 @@
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using System;
 using System.Collections.Generic;
 using Items;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class ItemPickerUI
 {
-    private RectTransform _contentArea;
-    private Button _itemButtonPrefab;
-    private List<Item> _availableItems;
+    private readonly RectTransform _contentArea;
+    private readonly Button _buttonPrefab;
 
-    private Dictionary<Item, Button> _itemButtons = new();
+    public event Action<Item> ItemPicked;
 
-    public delegate void OnItemPicked(Item item);
-    public event OnItemPicked ItemPicked;
-
-    public ItemPickerUI(RectTransform contentArea, Button itemButtonPrefab)
+    public ItemPickerUI(RectTransform contentArea, Button buttonPrefab)
     {
         _contentArea = contentArea;
-        _itemButtonPrefab = itemButtonPrefab;
-        _availableItems = new List<Item>();
+        _buttonPrefab = buttonPrefab;
     }
 
     public void Initialize(List<Item> items)
     {
-        _availableItems = items;
-        PopulateItems();
-    }
+        foreach (Transform child in _contentArea)
+            UnityEngine.Object.Destroy(child.gameObject);
 
-    private void PopulateItems()
-    {
-        foreach (var item in _availableItems)
+        foreach (var item in items)
         {
-            var buttonInstance = GameObject.Instantiate(_itemButtonPrefab, _contentArea);
-            var tmpText = buttonInstance.GetComponentInChildren<TextMeshProUGUI>();
-            if (tmpText != null)
-                tmpText.text = item.Id;
+            var buttonGO = UnityEngine.Object.Instantiate(_buttonPrefab, _contentArea);
+            var button = buttonGO.GetComponent<Button>();
 
-            buttonInstance.onClick.AddListener(() => OnItemButtonClicked(item));
-            _itemButtons[item] = buttonInstance;
-        }
-    }
+            // Create or use an Image for the item sprite
+            var iconGO = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            iconGO.transform.SetParent(buttonGO.transform, false);
 
-    private void OnItemButtonClicked(Item item)
-    {
-        ItemPicked?.Invoke(item);
+            var iconRT = iconGO.GetComponent<RectTransform>();
+            var iconImage = iconGO.GetComponent<Image>();
+            iconImage.sprite = item.Sprite;
 
-        // Remove button from UI and dictionary
-        if (_itemButtons.TryGetValue(item, out Button button))
-        {
-            GameObject.Destroy(button.gameObject);
-            _itemButtons.Remove(item);
+            // Scale to represent item footprint visually (normalized to fit button)
+            float maxButtonSize = Mathf.Min(buttonGO.GetComponent<RectTransform>().rect.width, buttonGO.GetComponent<RectTransform>().rect.height);
+            float scaleX = item.Width;
+            float scaleY = item.Height;
+
+            // Normalize so the largest dimension fits within the button
+            float maxDim = Mathf.Max(scaleX, scaleY);
+            scaleX = (scaleX / maxDim) * (maxButtonSize * 0.8f);
+            scaleY = (scaleY / maxDim) * (maxButtonSize * 0.8f);
+
+            iconRT.sizeDelta = new Vector2(scaleX, scaleY);
+            iconRT.anchoredPosition = Vector2.zero;
+
+            button.onClick.AddListener(() => ItemPicked?.Invoke(item));
         }
     }
 }

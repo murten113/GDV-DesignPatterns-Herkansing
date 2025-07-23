@@ -123,12 +123,19 @@ public class GameManager : MonoBehaviour
 
         Debug.Log($"Clicked grid cell: ({gridX}, {gridY})");
 
-        if (!_gridSystem.IsInsideGrid(gridX, gridY) ||
-            !_gridSystem.CanPlaceItem(_currentItem, gridX, gridY))
+        // Ensure the whole item fits within grid bounds
+        bool fitsInBounds =
+            gridX >= 0 &&
+            gridY >= 0 &&
+            gridX + _currentItem.Width <= gridWidth &&
+            gridY + _currentItem.Height <= gridHeight;
+
+        if (!fitsInBounds || !_gridSystem.CanPlaceItem(_currentItem, gridX, gridY))
         {
             Debug.Log("Cannot place item here or out of bounds.");
             return;
         }
+
 
         var cmd = new PlaceItemCommand(
             _gridSystem,
