@@ -1,5 +1,4 @@
 using Grid;
-using Items;
 using Commands;
 using System;
 
@@ -8,7 +7,7 @@ namespace Commands
     public class PlaceItemCommand : ICommand
     {
         private GridSystem _gridSystem;
-        private Item _item;
+        private readonly Item _item;
         private int _x, _y;
 
         private Action<Item, int, int> _onPlaceVisual;

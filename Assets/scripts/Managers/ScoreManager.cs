@@ -1,5 +1,3 @@
-using Events;
-using Items;
 
 namespace Managers
 {

@@ -1,16 +1,14 @@
 using System;
+using UnityEngine;
 
-namespace Events
-{
+namespace Managers
+{ 
     public static class EventManager
     {
-        // Event triggered when an item is placed: passes Item and position
-        public static event Action<Items.Item, int, int> OnItemPlaced;
+        public static event Action<Item, int, int> OnItemPlaced;
+        public static event Action<Item, int, int> OnItemRemoved;
 
-        // Call this to notify listeners
-        public static void ItemPlaced(Items.Item item, int x, int y)
-        {
-            OnItemPlaced?.Invoke(item, x, y);
-        }
+        public static void ItemPlaced(Item item, int x, int y) => OnItemPlaced?.Invoke(item, x, y);
+        public static void ItemRemoved(Item item, int x, int y) => OnItemRemoved?.Invoke(item, x, y);
     }
 }
