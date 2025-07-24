@@ -1,6 +1,5 @@
 using UnityEngine;
 using Grid;
-using Items;
 using Commands;
 using Managers;
 using UnityEngine.UI;
@@ -49,16 +48,26 @@ public class GameManager : MonoBehaviour
 
         _itemPickerUI.ItemPicked += OnItemPickedFromUI;
 
+        // Load sprites and prefabs from Resources or inspector
+        Sprite sprite1 = Resources.Load<Sprite>("Sprites/item01");
+        Sprite sprite2 = Resources.Load<Sprite>("Sprites/item02");
+        Sprite sprite3 = Resources.Load<Sprite>("Sprites/item03");
+
+        GameObject prefab1 = Resources.Load<GameObject>("Prefabs/item01");
+        GameObject prefab2 = Resources.Load<GameObject>("Prefabs/item02");
+        GameObject prefab3 = Resources.Load<GameObject>("Prefabs/item03");
+
         _itemPickerUI.Initialize(new List<Item>
-        {
-            new Item("item01", 1, 1, 5, ItemType.Basic),
-            new Item("item02", 2, 2, 10, ItemType.Basic),
-            new Item("item03", 3, 1, 15, ItemType.Basic)
-        });
+    {
+        new Item("item01", 1, 1, 5, ItemType.Basic, sprite1, prefab1),
+        new Item("item02", 2, 2, 10, ItemType.Basic, sprite2, prefab2),
+        new Item("item03", 3, 1, 15, ItemType.Basic, sprite3, prefab3)
+    });
 
         CreateGridVisual();
         UpdateScore(0);
     }
+
 
     private void CreateGridVisual()
     {
@@ -160,7 +169,8 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        var itemGO = Instantiate(itemVisualPrefab, cellGO.transform);
+        GameObject prefab = item.Prefab ?? itemVisualPrefab; // fallback to default if none set
+        var itemGO = Instantiate(prefab, cellGO.transform);
         var rt = itemGO.GetComponent<RectTransform>();
 
         rt.anchoredPosition = Vector2.zero;
@@ -172,6 +182,7 @@ public class GameManager : MonoBehaviour
         _placedItemVisuals[(x, y)] = itemGO;
         UpdateScore(item.ScoreValue);
     }
+
 
 
     private void OnRemoveItemVisual(Item item, int x, int y)

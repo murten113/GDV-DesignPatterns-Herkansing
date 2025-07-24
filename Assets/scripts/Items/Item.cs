@@ -1,31 +1,56 @@
 using UnityEngine;
 
-namespace Items
+public enum ItemType
 {
-    public class Item
-    {
-        public string Id { get; private set; }
-        public int Width { get; private set; }
-        public int Height { get; private set; }
-        public int ScoreValue { get; private set; }
-        public ItemType Type { get; private set; }
-        public Sprite Sprite { get; private set; }  // Add this property
+    Basic,
+    Advanced,
+    Special
+}
 
-        public Item(string id, int width, int height, int scoreValue, ItemType type, Sprite sprite = null)
-        {
-            Id = id;
-            Width = width;
-            Height = height;
-            ScoreValue = scoreValue;
-            Type = type;
-            Sprite = sprite;  // Assign sprite
-        }
+[System.Serializable]
+public class Item
+{
+    public string Id;
+    public int Width;
+    public int Height;
+    public int ScoreValue;
+    public ItemType Type;
+    public Sprite Sprite;
+    public GameObject Prefab;
+
+    // Minimal constructor
+    public Item(string id, int width, int height, int scoreValue, ItemType type)
+    {
+        Id = id;
+        Width = width;
+        Height = height;
+        ScoreValue = scoreValue;
+        Type = type;
+        Sprite = null;
+        Prefab = null;
     }
 
-    public enum ItemType
-        {
-            Basic,
-            Rare,
-            Heavy,
-        }
+    // Constructor with Sprite
+    public Item(string id, int width, int height, int scoreValue, ItemType type, Sprite sprite)
+    {
+        Id = id;
+        Width = width;
+        Height = height;
+        ScoreValue = scoreValue;
+        Type = type;
+        Sprite = sprite;
+        Prefab = null;
+    }
+
+    // Constructor with Sprite and Prefab
+    public Item(string id, int width, int height, int scoreValue, ItemType type, Sprite sprite, GameObject prefab)
+    {
+        Id = id;
+        Width = width;
+        Height = height;
+        ScoreValue = scoreValue;
+        Type = type;
+        Sprite = sprite;
+        Prefab = prefab;
+    }
 }
