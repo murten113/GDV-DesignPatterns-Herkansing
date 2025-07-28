@@ -58,11 +58,11 @@ public class GameManager : MonoBehaviour
         GameObject prefab3 = Resources.Load<GameObject>("Prefabs/item03");
 
         _itemPickerUI.Initialize(new List<Item>
-    {
-        new Item("item01", 1, 1, 5, ItemType.Basic, sprite1, prefab1),
-        new Item("item02", 2, 2, 10, ItemType.Basic, sprite2, prefab2),
-        new Item("item03", 3, 1, 15, ItemType.Basic, sprite3, prefab3)
-    });
+        {
+                new Item("item01", 1, 1, 5, ItemType.Basic, sprite1, prefab1),
+                new Item("item02", 2, 2, 10, ItemType.Basic, sprite2, prefab2),
+                new Item("item03", 3, 1, 15, ItemType.Basic, sprite3, prefab3)
+        });
 
         CreateGridVisual();
         UpdateScore(0);
@@ -169,19 +169,37 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        GameObject prefab = item.Prefab ?? itemVisualPrefab; // fallback to default if none set
-        var itemGO = Instantiate(prefab, cellGO.transform);
+        var itemGO = Instantiate(itemVisualPrefab, gridVisualContainer);
         var rt = itemGO.GetComponent<RectTransform>();
 
-        rt.anchoredPosition = Vector2.zero;
+        // Set size based on the item footprint
         rt.sizeDelta = new Vector2(item.Width * cellSize, item.Height * cellSize);
 
+        // Grid origin is top-left, so invert Y to get proper positioning
+        float posX = x * cellSize + (item.Width * cellSize) / 2f;
+        float posY = -y * cellSize - (item.Height * cellSize) / 2f;
+
+        // Offset from top-left, accounting for the container's height
+        posY += gridVisualContainer.rect.height / 2f;
+
+        // Finally, position it
+        rt.anchoredPosition = new Vector2(posX - gridVisualContainer.rect.width / 2f, posY);
+
+        // Make the sprite scale correctly
         if (item.Sprite != null && itemGO.TryGetComponent<Image>(out var img))
+        {
             img.sprite = item.Sprite;
+            img.preserveAspect = true;
+        }
 
         _placedItemVisuals[(x, y)] = itemGO;
         UpdateScore(item.ScoreValue);
     }
+
+
+
+
+
 
 
 
@@ -200,4 +218,10 @@ public class GameManager : MonoBehaviour
         _score += delta;
         scoreText.text = $"Score: {_score}";
     }
+
+    //debug
+    [SerializeField] private GameObject debugLinePrefab; // A thin UI Image line
+
+
+
 }
