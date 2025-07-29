@@ -22,6 +22,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Image heldItemUIImage;
     [SerializeField] private TextMeshProUGUI scoreText;
 
+    [Header("Menu References")]
+    [SerializeField] private GameObject mainMenuPanel;   // Main menu UI
+    [SerializeField] private GameObject gameUIPanel;     // Game HUD/UI
+    [SerializeField] private Button playButton;
+    [SerializeField] private Button quitButton;
+
+
     private GridSystem _gridSystem;
     private CommandInvoker _commandInvoker;
     private Item _currentItem;
@@ -33,8 +40,33 @@ public class GameManager : MonoBehaviour
     private Dictionary<(int x, int y), GameObject> _cellGameObjects = new();
     private int _score = 0;
 
+    private bool _gameActive = false;
     private void Awake()
     {
+        // Menu buttons
+        playButton.onClick.AddListener(StartGame);
+        quitButton.onClick.AddListener(() =>
+        {
+            Debug.Log("Quitting game...");
+            Application.Quit();
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+        });
+
+        // Show menu, hide game
+        mainMenuPanel.SetActive(true);
+        gameUIPanel.SetActive(false);
+    }
+
+
+    private void StartGame()
+    {
+        mainMenuPanel.SetActive(false);
+        gameUIPanel.SetActive(true);
+        _gameActive = true;
+
         InitializeGame();
     }
 
@@ -101,15 +133,13 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (!_gameActive) return;
+
         if (_currentItem != null && Input.GetMouseButtonDown(0))
-        {
             HandlePlacement();
-        }
 
         if (Input.GetKeyDown(KeyCode.Z))
-        {
             _commandInvoker.UndoLast();
-        }
     }
 
     private void HandlePlacement()
