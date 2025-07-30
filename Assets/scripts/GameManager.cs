@@ -80,9 +80,9 @@ public class GameManager : MonoBehaviour
 
         _itemPickerUI.Initialize(new List<Item>
         {
-            new Item("item01", 1, 1, 5, ItemType.Basic),
-            new Item("item02", 2, 2, 10, ItemType.Basic),
-            new Item("item03", 3, 1, 15, ItemType.Basic)
+            new Item("1X1", 1, 1, 5, ItemType.Basic),
+            new Item("2X2", 2, 2, 10, ItemType.Basic),
+            new Item("3X1", 3, 1, 15, ItemType.Basic)
         });
 
         CreateGridVisual();
