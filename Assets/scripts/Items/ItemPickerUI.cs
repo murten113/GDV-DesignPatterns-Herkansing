@@ -6,18 +6,29 @@ using TMPro;
 
 public class ItemPickerUI
 {
+    /// This class handles the UI for picking items in the game.
     private RectTransform contentArea;
     private Button buttonPrefab;
     private List<Item> allItems;
 
     public event Action<Item> ItemPicked;
 
+    /// <summary>
+    /// Constructor for ItemPickerUI.
+    /// </summary>
+    /// <param name="contentArea"></param>
+    /// <param name="buttonPrefab"></param>
     public ItemPickerUI(RectTransform contentArea, Button buttonPrefab)
     {
         this.contentArea = contentArea;
         this.buttonPrefab = buttonPrefab;
     }
 
+
+    /// <summary>
+    /// Initializes the item picker UI with a list of items.
+    /// </summary>
+    /// <param name="items"></param>
     public void Initialize(List<Item> items)
     {
         allItems = new List<Item>(items);

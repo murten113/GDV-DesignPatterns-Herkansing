@@ -2,7 +2,10 @@ using System;
 using UnityEngine;
 
 namespace Managers
-{ 
+{
+    /// <summary>
+    /// EventManager is a static class that manages game events related to item placement and removal.
+    /// </summary>
     public static class EventManager
     {
         public static event Action<Item, int, int> OnItemPlaced;

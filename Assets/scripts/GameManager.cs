@@ -9,6 +9,10 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
+    /// <summary>
+    /// GameManager is the main controller for the game, managing the grid, item placement, UI interactions, and game state.
+    /// </summary>
+    #region Serialized Fields
     [Header("Grid Configuration")]
     [SerializeField] private int gridWidth = 10;
     [SerializeField] private int gridHeight = 6;
@@ -31,8 +35,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI finalScoreText;
     [SerializeField] private Button playAgainButton;
     [SerializeField] private Button mainMenuButton;
+    #endregion
 
-
+    #region Constants
     private GridSystem _gridSystem;
     private CommandInvoker _commandInvoker;
     private Item _currentItem;
@@ -43,8 +48,13 @@ public class GameManager : MonoBehaviour
     private Dictionary<(int x, int y), GameObject> _placedItemVisuals = new();
     private Dictionary<(int x, int y), GameObject> _cellGameObjects = new();
     private int _score = 0;
+    #endregion
 
     #region Menu Navigation
+
+    /// <summary>
+    /// Awake is called when the script instance is being loaded.
+    /// </summary>
     private void Awake()
     {
         ShowMenu();
@@ -55,7 +65,9 @@ public class GameManager : MonoBehaviour
         resultPanel.SetActive(false);
     }
 
-   
+    /// <summary>
+    /// Starts the game by hiding the menu panel and initializing the game state.
+    /// </summary>
     public void StartGame()
     {
         menuPanel.SetActive(false);
@@ -63,12 +75,20 @@ public class GameManager : MonoBehaviour
         InitializeGame();
     }
 
+
+    /// <summary>
+    /// Shows the main menu panel and hides the game panel.
+    /// </summary>
     public void ShowMenu()
     {
         menuPanel.SetActive(true);
         gamePanel.SetActive(false);
     }
 
+
+    /// <summary>
+    /// Quits the game application. In the editor, it stops play mode.
+    /// </summary>
     public void QuitGame()
     {
         Application.Quit();
@@ -77,6 +97,10 @@ public class GameManager : MonoBehaviour
 #endif
     }
 
+
+    /// <summary>
+    /// Displays the result screen with the final score and hides the game panel.
+    /// </summary>
     private void ShowResultScreen()
     {
         finalScoreText.text = $"Final Score: {_score}";
@@ -85,6 +109,10 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 0f; 
     }
 
+
+    /// <summary>
+    /// Restarts the game by resetting the game state, hiding the result panel, and showing the game panel.
+    /// </summary>
     private void RestartGame()
     {
         resultPanel.SetActive(false);
@@ -93,12 +121,20 @@ public class GameManager : MonoBehaviour
         ResetGameState();
     }
 
+
+    /// <summary>
+    /// Returns to the main menu by hiding the result panel and showing the menu panel.
+    /// </summary>
     private void ReturnToMainMenu()
     {
         resultPanel.SetActive(false);
         menuPanel.SetActive(true);
     }
 
+
+    /// <summary>
+    /// Resets the game state, clearing the grid and removing all placed item visuals.
+    /// </summary>
     private void ResetGameState()
     {
         _gridSystem.Clear(); 
@@ -114,6 +150,10 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Game Logic
+
+    /// <summary>
+    /// Initializes the game by setting up the grid system, command invoker, item picker UI, and held item UI.
+    /// </summary>
     private void InitializeGame()
     {
         _gridSystem = new GridSystem(gridWidth, gridHeight);
@@ -135,6 +175,10 @@ public class GameManager : MonoBehaviour
         UpdateScore(0);
     }
 
+
+    /// <summary>
+    /// Creates the visual representation of the grid based on the specified width, height, and cell size.
+    /// </summary>
     private void CreateGridVisual()
     {
         gridVisualContainer.sizeDelta = new Vector2(gridWidth * cellSize, gridHeight * cellSize);
@@ -153,6 +197,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+    /// <summary>
+    /// Handles the item picked from the UI, updating the current item and showing it in the held item UI.
+    /// </summary>
+    /// <param name="item"></param>
     private void OnItemPickedFromUI(Item item)
     {
         _currentItem = item;
@@ -165,6 +214,10 @@ public class GameManager : MonoBehaviour
         Debug.Log($"Picked up item {item.Id}");
     }
 
+
+    /// <summary>
+    /// Update is called once per frame. It checks for mouse input to place items and handles undo commands.
+    /// </summary>
     private void Update()
     {
         if (_currentItem != null && Input.GetMouseButtonDown(0))
@@ -178,6 +231,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+    /// <summary>
+    /// Handles the placement of the currently held item based on mouse position, checking grid boundaries and placement rules.
+    /// </summary>
     private void HandlePlacement()
     {
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -198,6 +255,7 @@ public class GameManager : MonoBehaviour
 
         Debug.Log($"Clicked grid cell: ({gridX}, {gridY})");
 
+        // Check if the clicked position is within the grid bounds and if the item can be placed there
         if (!_gridSystem.IsInsideGrid(gridX, gridY) ||
             !_gridSystem.CanPlaceItem(_currentItem, gridX, gridY))
         {
@@ -205,6 +263,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        // Create and execute the command to place the item
         var cmd = new PlaceItemCommand(
             _gridSystem,
             _currentItem,
@@ -219,8 +278,17 @@ public class GameManager : MonoBehaviour
         _heldItemUI.Hide();
     }
 
+
+    /// <summary>
+    /// Handles the visual placement of an item in the grid, instantiating a visual representation at the specified coordinates.
+    /// </summary>
+    /// <param name="item"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
     private void OnPlaceItemVisual(Item item, int x, int y)
     {
+
+        // Check if the coordinates are within the grid bounds
         if (!_cellGameObjects.TryGetValue((x, y), out var cellGO))
         {
             Debug.LogError($"Cell ({x},{y}) not found!");
@@ -233,6 +301,7 @@ public class GameManager : MonoBehaviour
         rt.anchoredPosition = Vector2.zero;
         rt.sizeDelta = new Vector2(item.Width * cellSize, item.Height * cellSize);
 
+        // Set the item ID as the name of the GameObject for easier debugging
         if (item.Sprite != null && itemGO.TryGetComponent<Image>(out var img))
             img.sprite = item.Sprite;
 
@@ -240,8 +309,16 @@ public class GameManager : MonoBehaviour
         UpdateScore(item.ScoreValue);
     }
 
+
+    /// <summary>
+    /// Handles the removal of an item visual from the grid, destroying the GameObject and updating the score.
+    /// </summary>
+    /// <param name="item"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
     private void OnRemoveItemVisual(Item item, int x, int y)
     {
+        // Check if the coordinates are within the grid bounds and if the item visual exists
         if (_placedItemVisuals.TryGetValue((x, y), out GameObject itemGO))
         {
             Destroy(itemGO);
@@ -250,6 +327,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+
+    /// <summary>
+    /// Updates the score displayed in the UI by adding the specified delta value to the current score.
+    /// </summary>
+    /// <param name="delta"></param>
     private void UpdateScore(int delta)
     {
         _score += delta;
