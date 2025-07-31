@@ -24,8 +24,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI scoreText;
 
     [Header("Menu UI")]
-    [SerializeField] private GameObject menuPanel; // Drag the menu UI panel here
-    [SerializeField] private GameObject gamePanel; // Drag the gameplay UI (grid, picker, etc.)
+    [SerializeField] private GameObject menuPanel; 
+    [SerializeField] private GameObject gamePanel;
+    [SerializeField] private Button doneButton;
+    [SerializeField] private GameObject resultPanel;
+    [SerializeField] private TextMeshProUGUI finalScoreText;
+    [SerializeField] private Button playAgainButton;
+    [SerializeField] private Button mainMenuButton;
+
 
     private GridSystem _gridSystem;
     private CommandInvoker _commandInvoker;
@@ -42,6 +48,11 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         ShowMenu();
+        doneButton.onClick.AddListener(ShowResultScreen);
+        playAgainButton.onClick.AddListener(RestartGame);
+        mainMenuButton.onClick.AddListener(ReturnToMainMenu);
+
+        resultPanel.SetActive(false);
     }
 
    
@@ -65,6 +76,41 @@ public class GameManager : MonoBehaviour
         UnityEditor.EditorApplication.isPlaying = false;
 #endif
     }
+
+    private void ShowResultScreen()
+    {
+        finalScoreText.text = $"Final Score: {_score}";
+        resultPanel.SetActive(true);
+        gamePanel.SetActive(false);
+        Time.timeScale = 0f; 
+    }
+
+    private void RestartGame()
+    {
+        resultPanel.SetActive(false);
+        gamePanel.SetActive(true);
+
+        ResetGameState();
+    }
+
+    private void ReturnToMainMenu()
+    {
+        resultPanel.SetActive(false);
+        menuPanel.SetActive(true);
+    }
+
+    private void ResetGameState()
+    {
+        _gridSystem.Clear(); 
+        foreach (var visual in _placedItemVisuals.Values)
+            Destroy(visual);
+
+        _placedItemVisuals.Clear();
+        _score = 0;
+        scoreText.text = "Score: 0";
+    }
+
+
     #endregion
 
     #region Game Logic
@@ -81,8 +127,8 @@ public class GameManager : MonoBehaviour
         _itemPickerUI.Initialize(new List<Item>
         {
             new Item("1X1", 1, 1, 5, ItemType.Basic),
-            new Item("2X2", 2, 2, 10, ItemType.Basic),
-            new Item("3X1", 3, 1, 15, ItemType.Basic)
+            new Item("2X2", 2, 2, 15, ItemType.Special),
+            new Item("3X1", 3, 1, 10, ItemType.Advanced)
         });
 
         CreateGridVisual();

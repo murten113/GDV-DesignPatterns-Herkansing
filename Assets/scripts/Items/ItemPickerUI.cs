@@ -2,76 +2,53 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static Item;
 using TMPro;
 
 public class ItemPickerUI
 {
-    private RectTransform _contentArea;
-    private Button _buttonPrefab;
-    private List<Item> _allItems;
-
-    private readonly Dictionary<Button, int> _buttonItemIndices = new();
+    private RectTransform contentArea;
+    private Button buttonPrefab;
+    private List<Item> allItems;
 
     public event Action<Item> ItemPicked;
 
     public ItemPickerUI(RectTransform contentArea, Button buttonPrefab)
     {
-        _contentArea = contentArea;
-        _buttonPrefab = buttonPrefab;
+        this.contentArea = contentArea;
+        this.buttonPrefab = buttonPrefab;
     }
 
     public void Initialize(List<Item> items)
     {
-        _allItems = items;
+        allItems = new List<Item>(items);
 
-        foreach (Transform child in _contentArea)
+        foreach (var item in items)
         {
-            UnityEngine.Object.Destroy(child.gameObject);
+
+            Button button = GameObject.Instantiate(buttonPrefab, contentArea);
+            TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
+
+
+            Item currentItem = item;
+            buttonText.text = $"{currentItem.Width}x{currentItem.Height}";
+
+            button.onClick.AddListener(() =>
+            {
+                
+                ItemPicked?.Invoke(currentItem);
+                Debug.Log($"Picked up item {currentItem.Id} ({currentItem.Width}x{currentItem.Height})");
+
+
+                Item nextItem;
+                do
+                {
+                    nextItem = allItems[UnityEngine.Random.Range(0, allItems.Count)];
+                } while (nextItem == currentItem && allItems.Count > 1);
+
+
+                currentItem = nextItem;
+                buttonText.text = $"{currentItem.Width}x{currentItem.Height}";
+            });
         }
-
-        for (int i = 0; i < items.Count; i++)
-        {
-            int index = i;
-            Button button = UnityEngine.Object.Instantiate(_buttonPrefab, _contentArea);
-            _buttonItemIndices[button] = index;
-
-            SetButtonVisual(button, index);
-            button.onClick.AddListener(() => OnItemButtonClicked(button));
-        }
-    }
-
-    private void SetButtonVisual(Button button, int itemIndex)
-    {
-        Item item = _allItems[itemIndex];
-
-        Image image = button.GetComponent<Image>();
-        if (image != null && item.Sprite != null)
-        {
-            image.sprite = item.Sprite;
-            image.preserveAspect = true;
-        }
-
-        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
-        if (label != null)
-        {
-            label.text = item.Id;
-        }
-    }
-
-    private void OnItemButtonClicked(Button button)
-    {
-        int currentIndex = _buttonItemIndices[button];
-
-        int newIndex;
-        do
-        {
-            newIndex = UnityEngine.Random.Range(0, _allItems.Count);
-        } while (newIndex == currentIndex && _allItems.Count > 1);
-
-        _buttonItemIndices[button] = newIndex;
-        SetButtonVisual(button, newIndex);
-
-        ItemPicked?.Invoke(_allItems[newIndex]);
     }
 }
