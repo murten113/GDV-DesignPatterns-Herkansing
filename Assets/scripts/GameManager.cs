@@ -287,28 +287,32 @@ public class GameManager : MonoBehaviour
     /// <param name="y"></param>
     private void OnPlaceItemVisual(Item item, int x, int y)
     {
-
-        // Check if the coordinates are within the grid bounds
-        if (!_cellGameObjects.TryGetValue((x, y), out var cellGO))
+        for (int i = 0; i < item.Width; i++)
         {
-            Debug.LogError($"Cell ({x},{y}) not found!");
-            return;
+            for (int j = 0; j < item.Height; j++)
+            {
+                int cellX = x + i;
+                int cellY = y + j;
+
+                if (!_cellGameObjects.TryGetValue((cellX, cellY), out var cellGO))
+                {
+                    Debug.LogError($"Cell ({cellX},{cellY}) not found!");
+                    continue;
+                }
+
+                var itemGO = Instantiate(itemVisualPrefab, cellGO.transform);
+                var rt = itemGO.GetComponent<RectTransform>();
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = new Vector2(cellSize, cellSize);
+
+                if (item.Sprite != null && itemGO.TryGetComponent<Image>(out var img))
+                    img.sprite = item.Sprite;
+
+                _placedItemVisuals[(cellX, cellY)] = itemGO;
+            }
         }
-
-        var itemGO = Instantiate(itemVisualPrefab, cellGO.transform);
-        var rt = itemGO.GetComponent<RectTransform>();
-
-        rt.anchoredPosition = Vector2.zero;
-        rt.sizeDelta = new Vector2(item.Width * cellSize, item.Height * cellSize);
-
-        // Set the item ID as the name of the GameObject for easier debugging
-        if (item.Sprite != null && itemGO.TryGetComponent<Image>(out var img))
-            img.sprite = item.Sprite;
-
-        _placedItemVisuals[(x, y)] = itemGO;
         UpdateScore(item.ScoreValue);
     }
-
 
     /// <summary>
     /// Handles the removal of an item visual from the grid, destroying the GameObject and updating the score.
@@ -318,13 +322,21 @@ public class GameManager : MonoBehaviour
     /// <param name="y"></param>
     private void OnRemoveItemVisual(Item item, int x, int y)
     {
-        // Check if the coordinates are within the grid bounds and if the item visual exists
-        if (_placedItemVisuals.TryGetValue((x, y), out GameObject itemGO))
+        for (int i = 0; i < item.Width; i++)
         {
-            Destroy(itemGO);
-            _placedItemVisuals.Remove((x, y));
-            UpdateScore(-item.ScoreValue);
+            for (int j = 0; j < item.Height; j++)
+            {
+                int cellX = x + i;
+                int cellY = y + j;
+
+                if (_placedItemVisuals.TryGetValue((cellX, cellY), out var itemGO))
+                {
+                    Destroy(itemGO);
+                    _placedItemVisuals.Remove((cellX, cellY));
+                }
+            }
         }
+        UpdateScore(-item.ScoreValue);
     }
 
 
